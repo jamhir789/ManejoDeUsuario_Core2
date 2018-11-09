@@ -1,0 +1,109 @@
+@model IEnumerable<SistemaAC.Models.Usuario>
+
+@{
+    ViewData["Title"] = "Usuarios";
+}
+
+<h2>Usuarios</h2>
+
+<p>
+    <!--<a asp-action="Create">Create New</a>-->
+</p>
+<table class="table table-bordered">
+    <thead class="thead-dark">
+        <tr>
+            <th>
+                Usuario
+            </th>
+            <th>
+                Rol
+            </th>
+            <th>
+                Email
+            </th>
+
+
+            <th>
+                Telefono
+            </th>
+
+
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.UserName)
+            </td>
+
+            <td>
+                @Html.DisplayFor(modelItem => item.Role)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Email)
+            </td>
+
+            <td>
+                @Html.DisplayFor(modelItem => item.PhoneNumber)
+            </td>
+
+            <td>
+                <a class="btn btn-success" data-toggle="modal" data-target="#modalEditar" onclick="getUsuario('@item.Id','Usuarios/GetUsuario')"> Editar</a> |
+                <a class="btn btn-info" asp-action="Details" asp-route-id="@item.Id">Detalles</a> |
+                <a class="btn btn-danger" asp-action="Delete" asp-route-id="@item.Id">Eliminar</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+
+
+<div class="modal fade" id="modalEditar" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">Editar Usuario</h4>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" name="Id" id="id" />
+                    <div class="form-group">
+                        <label for="UserName" class="control-label">Usuario</label>
+                        <select id="Select" name="Select" class="form-control" onclick="getRoles('Usuario/GetRoles')">
+                            <option value="0">Seeccione un rol</option>
+                        </select>
+                        
+                    </div>
+                    <div class="form-group">
+                        <label for="Email" class="control-label">Rol</label>
+                        <input for="Email" name="Email" id="Email" class="form-control" />
+
+                    </div>
+
+
+
+                    <div class="form-group">
+                        <label for="Email" class="control-label">Email</label>
+                        <input for="Email" name="Email" id="Email" class="form-control" />
+
+                    </div>
+                    <div class="form-group">
+                        <label for="PhoneNumber" class="control-label">Telefono</label>
+                        <input for="PhoneNumber" name="PhoneNumber" id="PhoneNumber" class="form-control" />
+                    </div>
+                </form>
+
+
+
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="editarUsuario('Usuarios/EditUsuario')">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+</div>

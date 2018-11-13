@@ -16,7 +16,7 @@ namespace SistemaAC.Controllers
         private readonly ApplicationDbContext _context;
 
         ////////////////////
-          UserManager<ApplicationUser> _userManager;
+        UserManager<ApplicationUser> _userManager;
         RoleManager<IdentityRole> _roleManager;
         UsuarioRole _usuarioRole;
         public List<SelectListItem> usuarioRole;
@@ -48,11 +48,11 @@ namespace SistemaAC.Controllers
             var appUsuario = await _context.ApplicationUser.ToListAsync();
             ///ahora con una estructura foreach vamos a recorrer
             /////todos los valores del objeto appUsuario
-            foreach(var Data in appUsuario)
+            foreach (var Data in appUsuario)
             {
                 ID = Data.Id;
                 /////utilizamos el metodo getrole que vide de la clase usuario role 
-                usuarioRole = await _usuarioRole.GetRole(_userManager,_roleManager,ID);
+                usuarioRole = await _usuarioRole.GetRole(_userManager, _roleManager, ID);
 
                 usuario.Add(new Usuario() {
                     Id = Data.Id,
@@ -79,24 +79,25 @@ namespace SistemaAC.Controllers
             List<Usuario> usuario = new List<Usuario>();
             var appUsuario = await _context.ApplicationUser.SingleOrDefaultAsync(m => m.Id == id);
             usuarioRole = await _usuarioRole.GetRole(_userManager, _roleManager, id);
-            usuario.Add(new Usuario(){
+            usuario.Add(new Usuario() {
                 Id = appUsuario.Id,
                 UserName = appUsuario.UserName,
-                PhoneNumber=appUsuario.PhoneNumber,
-                Email=appUsuario.Email,
-                Role=usuarioRole[0].Text,
-                RoleId= usuarioRole[0].Value,
+                PhoneNumber = appUsuario.PhoneNumber,
+                Email = appUsuario.Email,
+                Role = usuarioRole[0].Text,
+                RoleId = usuarioRole[0].Value,
                 AccessFailedCount = appUsuario.AccessFailedCount,
                 ConcurrencyStamp = appUsuario.ConcurrencyStamp,
                 EmailConfirmed = appUsuario.EmailConfirmed,
-                LockoutEnabled= appUsuario.LockoutEnabled,
-                LockoutEnd= appUsuario.LockoutEnd,
-                NormalizedEmail= appUsuario.NormalizedEmail,
-                NormalizedUserName=appUsuario.NormalizedUserName,
-                PasswordHash =appUsuario.PasswordHash,
-                PhoneNumberConfirmed= appUsuario.PhoneNumberConfirmed,
-                SecurityStamp=appUsuario.SecurityStamp,
-                TwoFactorEnabled=appUsuario.TwoFactorEnabled
+                LockoutEnabled = appUsuario.LockoutEnabled,
+                LockoutEnd = appUsuario.LockoutEnd,
+                NormalizedEmail = appUsuario.NormalizedEmail,
+                NormalizedUserName = appUsuario.NormalizedUserName,
+                PasswordHash = appUsuario.PasswordHash,
+                PhoneNumberConfirmed = appUsuario.PhoneNumberConfirmed,
+                SecurityStamp = appUsuario.SecurityStamp,
+                TwoFactorEnabled = appUsuario.TwoFactorEnabled
+
             });
 
             return usuario;
@@ -105,11 +106,22 @@ namespace SistemaAC.Controllers
             //usuario.Add(appUsuario);
 
         }
+        //metodo get roles que depende de la clase list
+        public async Task<List<SelectListItem>> GetRoles()
+        {
+            //creo el objeto llamado roleslist
+            List<SelectListItem> rolesLista = new List<SelectListItem>();
+            rolesLista = _usuarioRole.Roles(_roleManager);
+
+            return rolesLista;
+        }
+       
+
 
         public async Task<string> EditUsuario(string id, string userName, string email, string phoneNumber,int accessFailedCount,
             string concurrencyStamp,bool emailConfirmed,
             bool lockoutEnabled, DateTimeOffset lockoutEnd ,string normalizedEmail, string normalizedUserName,
-            string passwordHash,bool phoneNumberConfirmed,string securityStamp,bool twoFactorEnabled, ApplicationUser applicationUser)
+            string passwordHash,bool phoneNumberConfirmed,string securityStamp,bool twoFactorEnabled, string selectRole,ApplicationUser applicationUser)
         {
            
             var resp = "";
@@ -121,21 +133,37 @@ namespace SistemaAC.Controllers
                     UserName = userName,
                     Email = email,
                     PhoneNumber = phoneNumber,
-                    AccessFailedCount= accessFailedCount,
+                    AccessFailedCount = accessFailedCount,
                     ConcurrencyStamp = concurrencyStamp,
                     EmailConfirmed = emailConfirmed,
-                    LockoutEnabled= lockoutEnabled,
-                    LockoutEnd= lockoutEnd,
-                    NormalizedEmail= normalizedEmail,
-                    NormalizedUserName= normalizedUserName,
+                    LockoutEnabled = lockoutEnabled,
+                    LockoutEnd = lockoutEnd,
+                    NormalizedEmail = normalizedEmail,
+                    NormalizedUserName = normalizedUserName,
                     PasswordHash = passwordHash,
-                    PhoneNumberConfirmed= phoneNumberConfirmed,
-                    SecurityStamp= securityStamp,
-                    TwoFactorEnabled= twoFactorEnabled,
+                    PhoneNumberConfirmed = phoneNumberConfirmed,
+                    SecurityStamp = securityStamp,
+                    TwoFactorEnabled = twoFactorEnabled,
+
                 };
                 //actualizar los datos
                 _context.Update(applicationUser);
                 await _context.SaveChangesAsync();
+
+                var usuario = await _userManager.FindByIdAsync(id);
+                usuarioRole = await _usuarioRole.GetRole(_userManager, _roleManager, id);
+                if (usuarioRole[0].Text != "No Role")
+                {
+                    await _userManager.RemoveFromRoleAsync(usuario, usuarioRole[0].Text);
+                }
+                //validamos que el usuario seleccione un rol y si no se lo asigan por defecto
+                if(selectRole=="No Role")
+                {
+                    selectRole = "Usuario";
+                }
+                //ahora si almacenamos el rol
+                var resultado = await _userManager.AddToRoleAsync(usuario, selectRole);
+
                 resp = "Save";
             }
             catch
@@ -145,8 +173,51 @@ namespace SistemaAC.Controllers
             return resp;
         }
 
+        public async Task<String> DeleteUsuario(string id)
+        {
+            var resp = "";
+            try
+            {
+                //utilizamos una variable que almacene el usuario de acuerdo a su id de la clase application user
+                var applicationUser = await _context.ApplicationUser.SingleOrDefaultAsync(m => m.Id == id);
+                //utilizamos remove para el usuario almacenado en appplication user
+                _context.ApplicationUser.Remove(applicationUser);
+                //guardamos los cambios
+                await _context.SaveChangesAsync();
+                resp = "Delete";
+            }
+            catch
+            {
+                resp = "NoDelete";
+            }
+            return resp;
 
-        private bool ApplicationUserExists(string id)
+        }
+            
+        public async Task<String> CreateUsuario(string email, string phoneNumber,string passwordHash, string selectRole,ApplicationUser applicationUser)
+        {
+            var resp = "";
+            applicationUser = new ApplicationUser
+            {
+                UserName = email,
+                Email = email,
+                PhoneNumber = phoneNumber,
+            };
+            var result = await _userManager.CreateAsync(applicationUser, passwordHash);
+            if (result.Succeeded)
+            {
+                await _userManager.AddToRoleAsync(applicationUser, selectRole);
+                resp = "Save";
+            }
+            else
+            {
+                resp = "NoSave";
+            }
+            return resp;
+        }
+
+
+    private bool ApplicationUserExists(string id)
         {
             return _context.ApplicationUser.Any(e => e.Id == id);
         }
